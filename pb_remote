@@ -1,0 +1,100 @@
+#!/bin/bash
+
+TRIED=0
+SCRIPTDIR='scripts'
+
+#Check if hosts file exists in directory.
+if [ ! -f hosts ]; then
+	echo 'HOSTS FILE DOES NOT EXIST. EXITING.'
+	exit 0
+fi
+
+echo
+echo '***********************************************************'
+echo 'THIS SCRIPT WILL EXECUTE ANY SCRIPT YOU TELL IT TO AS ROOT!'
+echo 'PROCEED WITH CAUTION!'
+echo '***********************************************************'
+echo
+
+#VERIFY USER INTENT
+read -p 'ARE YOU SURE YOU WANT TO CONTINUE (y/n)? ' -r
+echo    # (optional) move to a new line
+if [[ $REPLY =~ ^[Yy]$ ]]
+then
+	echo ''
+elif [[ $REPLY =~ ^[nN]$ ]]
+then
+    echo 'EXITING BASED ON USER INPUT. NOTHING EXECUTED.'
+    exit 0
+
+else
+    echo 'INVALID INPUT. EXITING. NOTHING EXECUTED.'
+    exit 0
+fi
+
+
+while [ $TRIED -lt 3 ]; do
+	#ASK FOR SCRIPT TO BE RAN
+	read -p 'SCRIPT NAME: ' -r
+	SCRIPT=$REPLY
+	read -p 'SSH USERNAME: ' -r
+	USERNAME=$REPLY
+	if [ -f $SCRIPTDIR/$SCRIPT ]; then
+		echo 
+		echo 'SCRIPT FOUND!'
+		echo
+		echo '****************************************'
+		echo 'SCRIPT WILL SSH AS USER '$USERNAME
+		echo 'SCRIPT WILL RUN ON THE FOLLOWING HOSTS: '
+		echo '****************************************'
+		echo
+		cat hosts
+		echo
+		
+		##VERIFY AGAIN
+		read -p 'IS THIS CORRECT (y/n)? ' -r
+		echo    # (optional) move to a new line
+		if [[ $REPLY =~ ^[Yy]$ ]]
+		then
+        		echo ''
+		elif [[ $REPLY =~ ^[nN]$ ]]
+		then
+    			echo 'EXITING BASED ON USER INPUT. NOTHING EXECUTED.'
+    			exit 0
+
+		else
+    			echo 'INVALID INPUT. EXITING. NOTHING EXECUTED.'
+    			exit 0
+		fi
+		
+		echo
+		echo 'INITIATING REMOTE...'
+		echo 
+		
+		for HOST in `cat hosts` ; do
+			echo 'HOST: '$HOST
+			ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no $USERNAME@$HOST '/opt/pb/bin/pbrun bash -s' < $SCRIPTDIR/$SCRIPT
+			if [ 0 = $? ]; then
+			{
+				echo "REMOTE SCRIPT SUCCEEDED"
+				echo
+			}
+			else
+			{
+				echo "REMOTE SCRIPT FAILURE!"
+				echo
+				echo $HOST >> pb_remote.hosts.err
+			}
+			fi
+		done			
+		echo
+		echo 'REMOTE COMMANDS COMPLETED!'
+		echo
+		exit 0
+	else
+		echo 'SCRIPT NOT FOUND. PLEASE TRY AGAIN.'
+		let TRIED=TRIED+1
+	fi
+done
+
+echo 'TOO MANY TRIES. EXITING.'
