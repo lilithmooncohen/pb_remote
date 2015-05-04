@@ -1,4 +1,5 @@
-#!/bin/bash
+#!/bin/bashssh
+
 
 TRIED=0
 SCRIPTDIR='scripts'
@@ -73,7 +74,7 @@ while [ $TRIED -lt 3 ]; do
 		
 		for HOST in `cat hosts` ; do
 			echo 'HOST: '$HOST
-			ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no $USERNAME@$HOST '/opt/pb/bin/pbrun bash -s' < $SCRIPTDIR/$SCRIPT
+			ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no $USERNAME@$HOST 'source /etc/profile; /opt/pb/bin/pbrun bash -s' < $SCRIPTDIR/$SCRIPT
 			if [ 0 = $? ]; then
 			{
 				echo "REMOTE SCRIPT SUCCEEDED"
